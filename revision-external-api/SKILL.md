@@ -295,6 +295,17 @@ GET /api/external/search/dependencies?componentId=...
 
 Returns upstream and downstream direct dependencies for a component.
 
+## Duplicate Prevention
+
+Before creating a component or diagram, search for existing ones with a similar name:
+
+- **Components**: `GET /api/external/search/components?name=<name>`
+- **Diagrams**: `GET /api/external/search/diagrams?name=<name>`
+
+If matches are found, ask the user whether to **update an existing** resource or **create a new** one.
+
+Skip the search if the user's intent is already clear from the prompt (e.g., "create a new..." or "update the existing...").
+
 ## Workflow: Create a Diagram with Components
 
 A typical end-to-end flow: create components, then create a diagram that references them.
