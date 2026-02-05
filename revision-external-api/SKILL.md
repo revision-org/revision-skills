@@ -357,6 +357,28 @@ curl -H "Authorization: Bearer $API_KEY" \
 
 For bulk operations, use the **template endpoint** to sync everything in a single transaction instead.
 
+## Output Summary
+
+After every mutation (create, update, batch upsert, or template sync), print a summary that clearly separates what was created from what was updated.
+
+Format:
+
+```
+Created:
+  - Component "User Service" (id: user-service)
+  - Diagram "System Context" (id: system-context)
+
+Updated:
+  - Component "Auth Service" (id: auth-service) — updated name, desc
+```
+
+Rules:
+- Use **Created** for POST (201) responses and batch upsert items that had no `id` provided
+- Use **Updated** for PATCH (200) responses and batch upsert items that had an `id` provided
+- Always include the resource type, name, and ID
+- For updates, briefly note which fields changed
+- Omit a section if it's empty (e.g. don't print "Updated:" if nothing was updated)
+
 ## Error Responses
 
 All errors return:
