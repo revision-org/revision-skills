@@ -345,27 +345,31 @@ Find direct upstream and downstream dependencies for a component.
 
 ### ComponentInstance (Non-Container)
 
+> **Note**: `position`, `width`, and `height` are optional. When omitted, Revision auto-layouts and auto-sizes instances. Prefer omitting them unless the user explicitly requests specific positioning.
+
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `ref` | string | yes | Unique reference within diagram |
 | `componentId` | string\|null | no | Linked component ID |
-| `position` | `{x, y}` | no | Position on canvas |
-| `width` | number | no | Instance width |
-| `height` | number | no | Instance height |
+| `position` | `{x, y}` | no | Position on canvas (omit for auto-layout) |
+| `width` | number | no | Instance width (omit for auto-size) |
+| `height` | number | no | Instance height (omit for auto-size) |
 | `isContainer` | false | no | Must be false or omitted |
 | `parent` | string | no | Parent container's ref |
 | `placeholder` | object\|null | no | `{ text, typeId }` for unlinked instances |
 
 ### ComponentInstance (Container)
 
+> **Note**: `position`, `width`, and `height` are optional. When omitted, Revision auto-layouts and auto-sizes containers. Prefer omitting them unless the user explicitly requests specific positioning.
+
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `ref` | string | yes | Unique reference within diagram |
 | `isContainer` | true | yes | Must be true |
 | `componentId` | string\|null | no | Linked component ID |
-| `position` | `{x, y}` | no | Position on canvas |
-| `width` | number | no | Container width |
-| `height` | number | no | Container height |
+| `position` | `{x, y}` | no | Position on canvas (omit for auto-layout) |
+| `width` | number | no | Container width (omit for auto-size) |
+| `height` | number | no | Container height (omit for auto-size) |
 
 ### Relation
 

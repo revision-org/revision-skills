@@ -144,16 +144,17 @@ Every resource (components, diagrams, attributes, tags) follows the same pattern
 
 ### Component Instances
 
-Placed on diagrams. Two types:
+A **component** is part of the architecture model — a reusable entity that can be referenced across many diagrams. A **component instance** is a visual placeholder on a diagram. It can optionally link to a component via `componentId`, but it doesn't have to — unlinked instances are just standalone placeholders with a name and type.
+
+Two types:
+
+**Important**: `position`, `width`, and `height` are all optional. When omitted, Revision will automatically lay out and size the instances. **Prefer omitting them** unless the user explicitly asks for specific positioning or sizing — auto-layout produces better results.
 
 **Non-container** (default):
 ```json
 {
   "ref": "unique-ref",
   "componentId": "component-id | null",
-  "position": { "x": 100, "y": 200 },
-  "width": 200,
-  "height": 100,
   "parent": "container-ref",
   "isContainer": false,
   "placeholder": { "text": "Name", "typeId": "type-id" }
@@ -165,9 +166,6 @@ Placed on diagrams. Two types:
 {
   "ref": "unique-ref",
   "componentId": "component-id | null",
-  "position": { "x": 50, "y": 50 },
-  "width": 500,
-  "height": 400,
   "isContainer": true
 }
 ```
@@ -176,6 +174,7 @@ Placed on diagrams. Two types:
 - `componentId` links the instance to a component definition (null for placeholders)
 - Non-containers can reference a `parent` container via the container's `ref`
 - Containers cannot have a parent
+- `position`, `width`, `height` are optional — omit them to let Revision auto-layout and auto-size
 
 ### Relations
 
