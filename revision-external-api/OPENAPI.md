@@ -2,6 +2,17 @@
 
 Full endpoint reference. See [SKILL.md](SKILL.md) for overview and quick start.
 
+## Contents
+
+- [Components](#components) — CRUD + batch upsert
+- [Diagrams](#diagrams) — CRUD + batch upsert
+- [Attributes](#attributes) — CRUD + batch upsert
+- [Tags](#tags) — CRUD + batch upsert
+- [Types](#types) — Read-only
+- [Template](#template) — Bulk sync
+- [Search](#search) — Diagrams, components, dependencies
+- [Schemas](#schemas) — Component, Diagram, ComponentInstance, Relation, Textarea, Attribute, Tag, Type, ErrorResponse
+
 ## Components
 
 ### GET /api/external/components
@@ -12,13 +23,13 @@ List all components in the workspace.
 
 ### POST /api/external/components
 
-Create one or more components. Request body is an array. Items must NOT include `id`.
+Create a single component. Optionally include `id` for a predictable ID; omit for auto-generated.
 
-**Request body**: `Component[]` (without `id`)
+**Request body**: `Component`
 
 **Required fields**: `name`
 
-**Response 200**: `Component[]` (created items with assigned `id`)
+**Response 201**: `Component` (created)
 
 ### GET /api/external/components/{id}
 
@@ -29,7 +40,7 @@ Get a single component by ID (slug or ref).
 
 **Response 200**: `Component`
 
-### POST /api/external/components/{id}
+### PATCH /api/external/components/{id}
 
 Update a component by ID.
 
@@ -42,14 +53,9 @@ Update a component by ID.
 
 ### DELETE /api/external/components/{id}
 
-Delete a component by ID.
+**Not implemented** — returns 501.
 
-**Parameters**:
-- `id` (path, required): The component ID (slug or ref)
-
-**Response 200**: `{ "success": true }`
-
-### POST /api/external/components/upsert-batch
+### PATCH /api/external/components/upsert-batch
 
 Create or update multiple components. Items with `id` are updated; items without `id` are created.
 
@@ -69,13 +75,13 @@ List all diagrams in the workspace.
 
 ### POST /api/external/diagrams
 
-Create one or more diagrams. Request body is an array. Items must NOT include `id`.
+Create a single diagram. Optionally include `id` for a predictable ID; omit for auto-generated.
 
-**Request body**: `Diagram[]` (without `id`)
+**Request body**: `Diagram`
 
 **Required fields**: `name`
 
-**Response 200**: `Diagram[]`
+**Response 201**: `Diagram`
 
 ### GET /api/external/diagrams/{id}
 
@@ -86,7 +92,7 @@ Get a single diagram by ID (slug or ref).
 
 **Response 200**: `Diagram`
 
-### POST /api/external/diagrams/{id}
+### PATCH /api/external/diagrams/{id}
 
 Update a diagram by ID.
 
@@ -99,14 +105,9 @@ Update a diagram by ID.
 
 ### DELETE /api/external/diagrams/{id}
 
-Delete a diagram by ID.
+**Not implemented** — returns 501.
 
-**Parameters**:
-- `id` (path, required): The diagram ID (slug or ref)
-
-**Response 200**: `{ "success": true }`
-
-### POST /api/external/diagrams/upsert-batch
+### PATCH /api/external/diagrams/upsert-batch
 
 Create or update multiple diagrams. Items with `id` are updated; items without `id` are created.
 
@@ -126,9 +127,9 @@ List all attribute definitions.
 
 ### POST /api/external/attributes
 
-Create one or more attributes. Request body is an array. Items must NOT include `id`.
+Create a single attribute. Optionally include `id` for a predictable ID; omit for auto-generated.
 
-**Request body**: `Attribute[]` (without `id`)
+**Request body**: `Attribute`
 
 **Required fields**: `name`, `type`
 
@@ -136,7 +137,7 @@ Create one or more attributes. Request body is an array. Items must NOT include 
 - `list` field only allowed when `type` is `LIST`
 - `LIST` type must include a `list` array
 
-**Response 200**: `Attribute[]`
+**Response 201**: `Attribute`
 
 ### GET /api/external/attributes/{id}
 
@@ -147,7 +148,7 @@ Get a single attribute by ID.
 
 **Response 200**: `Attribute`
 
-### POST /api/external/attributes/{id}
+### PATCH /api/external/attributes/{id}
 
 Update an attribute by ID.
 
@@ -160,14 +161,9 @@ Update an attribute by ID.
 
 ### DELETE /api/external/attributes/{id}
 
-Delete an attribute by ID.
+**Not implemented** — returns 501.
 
-**Parameters**:
-- `id` (path, required): The attribute ID (slug or ref)
-
-**Response 200**: `{ "success": true }`
-
-### POST /api/external/attributes/upsert-batch
+### PATCH /api/external/attributes/upsert-batch
 
 Create or update multiple attributes.
 
@@ -187,13 +183,13 @@ List all tags.
 
 ### POST /api/external/tags
 
-Create one or more tags. Request body is an array. Items must NOT include `id`.
+Create a single tag. Optionally include `id` for a predictable ID; omit for auto-generated.
 
-**Request body**: `Tag[]` (without `id`)
+**Request body**: `Tag`
 
 **Required fields**: `name`, `color`
 
-**Response 200**: `Tag[]`
+**Response 201**: `Tag`
 
 ### GET /api/external/tags/{id}
 
@@ -204,7 +200,7 @@ Get a single tag by ID.
 
 **Response 200**: `Tag`
 
-### POST /api/external/tags/{id}
+### PATCH /api/external/tags/{id}
 
 Update a tag by ID.
 
@@ -217,14 +213,9 @@ Update a tag by ID.
 
 ### DELETE /api/external/tags/{id}
 
-Delete a tag by ID.
+**Not implemented** — returns 501.
 
-**Parameters**:
-- `id` (path, required): The tag ID (slug or ref)
-
-**Response 200**: `{ "success": true }`
-
-### POST /api/external/tags/upsert-batch
+### PATCH /api/external/tags/upsert-batch
 
 Create or update multiple tags.
 
@@ -279,7 +270,7 @@ Search diagrams by filters. At least one query parameter required.
 | `level` | enum | `C0`, `C1`, `C2`, `C3`, `C4`, `D1`, `P0` |
 | `state` | enum | `DRAFT`, `ACTIVE`, `ARCHIVED` |
 
-**Response 200**: `Diagram[]`
+**Response 200**: `DiagramSearchResult[]` — `{ id, name, url, state, level, tags }`
 
 ### GET /api/external/search/components
 
@@ -295,7 +286,7 @@ Search components by filters. At least one query parameter required.
 | `attributeValue` | string | Filter by attribute value (requires `attributeId`) |
 | `state` | enum | `DRAFT`, `ACTIVE`, `ARCHIVED` |
 
-**Response 200**: `Component[]`
+**Response 200**: `ComponentSearchResult[]` — `{ id, name, state, desc, type: { id, name } | null, tags, attributes: [{ id, value: string | null }] }`
 
 ### GET /api/external/search/dependencies
 
@@ -306,7 +297,7 @@ Find direct upstream and downstream dependencies for a component.
 |-----------|------|-------------|
 | `componentId` | string | The component ID to find dependencies for |
 
-**Response 200**: Object with upstream and downstream component arrays.
+**Response 200**: `DependencySearchResult[]` — `{ component: { id, name }, direction: "upstream" | "downstream", diagrams: [{ id, name }] }`
 
 ---
 
@@ -316,7 +307,7 @@ Find direct upstream and downstream dependencies for a component.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `id` | string | read-only | Assigned on create |
+| `id` | string | no | Provide for predictable ID, omit for auto-generated |
 | `name` | string | create | Component name |
 | `state` | enum | no | `DRAFT` (default), `ACTIVE`, `ARCHIVED` |
 | `ref` | string\|null | no | External reference |
@@ -331,7 +322,7 @@ Find direct upstream and downstream dependencies for a component.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `id` | string | read-only | Assigned on create |
+| `id` | string | no | Provide for predictable ID, omit for auto-generated |
 | `name` | string | create | Diagram name |
 | `state` | enum | no | `DRAFT` (default), `ACTIVE`, `ARCHIVED` |
 | `url` | string | read-only | Diagram URL |
@@ -367,6 +358,7 @@ Find direct upstream and downstream dependencies for a component.
 | `ref` | string | yes | Unique reference within diagram |
 | `isContainer` | true | yes | Must be true |
 | `componentId` | string\|null | no | Linked component ID |
+| `placeholder` | object\|null | no | `{ text, typeId }` for unlinked instances |
 | `position` | `{x, y}` | no | Position on canvas (omit for auto-layout) |
 | `width` | number | no | Container width (omit for auto-size) |
 | `height` | number | no | Container height (omit for auto-size) |
@@ -393,7 +385,7 @@ Find direct upstream and downstream dependencies for a component.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `id` | string | read-only | Assigned on create |
+| `id` | string | no | Provide for predictable ID, omit for auto-generated |
 | `name` | string | create | Attribute name (min 1 char) |
 | `type` | enum | create | `STRING`, `NUMBER`, `BOOLEAN`, `LINK`, `USERLIST`, `LIST` |
 | `desc` | string\|null | no | Description |
@@ -406,7 +398,7 @@ Find direct upstream and downstream dependencies for a component.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `id` | string | read-only | Assigned on create |
+| `id` | string | no | Provide for predictable ID, omit for auto-generated |
 | `name` | string | create | Tag name (min 1 char) |
 | `color` | enum | create | `gray`, `red`, `orange`, `yellow`, `green`, `blue`, `purple` |
 | `desc` | string\|null | no | Description |
@@ -431,3 +423,4 @@ Find direct upstream and downstream dependencies for a component.
 | 401 | Unauthorized - missing or invalid API key |
 | 404 | Resource not found |
 | 405 | Method not allowed |
+| 501 | Not implemented (e.g. DELETE endpoints) |

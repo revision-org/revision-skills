@@ -1,6 +1,6 @@
 ---
 name: revision-external-api
-description: Interacts with the Revision External API for managing architecture components, diagrams, attributes, tags, and templates. Use when the user mentions Revision API, architecture components, C4 diagrams, or wants to sync architecture data with Revision. IMPORTANT - Before making any API calls, always ask the user for their organization URL (e.g. https://acme-company.revision.app/) and API key. Each organization has its own subdomain — there is no default base URL.
+description: Manages architecture components, diagrams, attributes, tags, and templates via the Revision External API. Triggers when Revision API, architecture components, C4 diagrams, or syncing architecture data with Revision are mentioned.
 ---
 
 # Revision External API
@@ -60,14 +60,23 @@ curl -H "Authorization: Bearer $API_KEY" \
 ```bash
 curl -X POST -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
-  -d '[{"name": "User Service", "state": "ACTIVE"}]' \
+  -d '{"name": "User Service", "state": "ACTIVE"}' \
+  https://acme-company.revision.app/api/external/components
+```
+
+### Create a component with a predictable ID
+
+```bash
+curl -X POST -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"id": "user-service", "name": "User Service", "state": "ACTIVE"}' \
   https://acme-company.revision.app/api/external/components
 ```
 
 ### Update a component
 
 ```bash
-curl -X POST -H "Authorization: Bearer $API_KEY" \
+curl -X PATCH -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"name": "User Service", "state": "ACTIVE", "desc": "Handles user auth"}' \
   https://acme-company.revision.app/api/external/components/component-id
@@ -80,13 +89,16 @@ Every resource (components, diagrams, attributes, tags) follows the same pattern
 | Method | Path | Action |
 |--------|------|--------|
 | GET | `/api/external/{resource}` | List all |
-| POST | `/api/external/{resource}` | Create (array of items, no `id` field) |
+| POST | `/api/external/{resource}` | Create (single item) |
 | GET | `/api/external/{resource}/{id}` | Get by ID |
-| POST | `/api/external/{resource}/{id}` | Update by ID |
-| DELETE | `/api/external/{resource}/{id}` | Delete by ID |
-| POST | `/api/external/{resource}/upsert-batch` | Batch upsert (items with `id` are updated, without are created) |
+| PATCH | `/api/external/{resource}/{id}` | Update by ID |
+| PATCH | `/api/external/{resource}/upsert-batch` | Batch upsert (items with `id` are updated, without are created) |
 
-**Create requests** accept an array of items. Items must NOT include an `id` field.
+**Note**: DELETE endpoints exist but are **not yet implemented** (return 501).
+
+**ID behavior**: If you provide an `id` when creating, that exact ID is used (predictable). If you omit `id`, one is auto-generated. Providing a predictable `id` is useful when you need to reference the resource elsewhere (e.g. a component's `id` in a component instance's `componentId`).
+
+**Create requests** accept a single object (not an array). Returns 201 on success.
 
 **Batch upsert** is the most powerful pattern: send items with `id` to update, without `id` to create, all in one request.
 
@@ -107,6 +119,7 @@ Every resource (components, diagrams, attributes, tags) follows the same pattern
 }
 ```
 
+- `id`: Optional on create — provide it for a predictable ID, omit for auto-generated
 - `ref`: External reference identifier
 - `apiContext`: Opaque string for API-managed metadata
 - `linksTo`: Array of diagram IDs this component links to
@@ -166,7 +179,8 @@ Two types:
 {
   "ref": "unique-ref",
   "componentId": "component-id | null",
-  "isContainer": true
+  "isContainer": true,
+  "placeholder": { "text": "Name", "typeId": "type-id" }
 }
 ```
 
@@ -281,6 +295,57 @@ GET /api/external/search/dependencies?componentId=...
 
 Returns upstream and downstream direct dependencies for a component.
 
+## Workflow: Create a Diagram with Components
+
+A typical end-to-end flow: create components, then create a diagram that references them.
+
+1. **List types** to find the right `typeId` values:
+```bash
+curl -H "Authorization: Bearer $API_KEY" \
+  https://acme-company.revision.app/api/external/types
+```
+
+2. **Create components**:
+```bash
+curl -X POST -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"id": "user-service", "name": "User Service", "state": "ACTIVE"}' \
+  https://acme-company.revision.app/api/external/components
+```
+```bash
+curl -X POST -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"id": "user-db", "name": "User Database", "state": "ACTIVE"}' \
+  https://acme-company.revision.app/api/external/components
+```
+
+3. **Create a diagram** with component instances and a relation:
+```bash
+curl -X POST -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "User Service Context",
+    "level": "C2",
+    "state": "ACTIVE",
+    "componentInstances": [
+      { "ref": "us", "componentId": "user-service" },
+      { "ref": "udb", "componentId": "user-db" }
+    ],
+    "relations": [
+      { "fromRef": "us", "toRef": "udb", "label": "Reads/writes" }
+    ]
+  }' \
+  https://acme-company.revision.app/api/external/diagrams
+```
+
+4. **Verify** by fetching the diagram back:
+```bash
+curl -H "Authorization: Bearer $API_KEY" \
+  https://acme-company.revision.app/api/external/diagrams/<returned-id>
+```
+
+For bulk operations, use the **template endpoint** to sync everything in a single transaction instead.
+
 ## Error Responses
 
 All errors return:
@@ -294,6 +359,18 @@ All errors return:
 | 401 | Missing or invalid API key |
 | 404 | Resource not found |
 | 405 | Method not allowed |
+| 501 | Not implemented (e.g. DELETE endpoints) |
+
+### Error Recovery
+
+When an API call fails:
+
+1. **401**: Confirm the API key is correct and the Authorization header uses `Bearer` prefix.
+2. **400**: Read the `error` field — it describes the validation issue. Fix the request body and retry.
+3. **404**: Verify the resource ID. Use the list endpoint (`GET /api/external/{resource}`) to confirm the resource exists.
+4. **501**: DELETE is not implemented. Use PATCH to set `state: "ARCHIVED"` instead.
+
+Always verify mutations by fetching the resource back after create/update to confirm the change took effect.
 
 ## Full OpenAPI Spec
 
