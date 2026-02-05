@@ -1,11 +1,18 @@
 ---
 name: revision-external-api
-description: Interacts with the Revision External API for managing architecture components, diagrams, attributes, tags, and templates. Use when the user mentions Revision API, architecture components, C4 diagrams, or wants to sync architecture data with Revision.
+description: Interacts with the Revision External API for managing architecture components, diagrams, attributes, tags, and templates. Use when the user mentions Revision API, architecture components, C4 diagrams, or wants to sync architecture data with Revision. IMPORTANT - Before making any API calls, always ask the user for their organization URL (e.g. https://acme-company.revision.app/) and API key. Each organization has its own subdomain — there is no default base URL.
 ---
 
 # Revision External API
 
 REST API for managing architecture documentation in Revision workspaces.
+
+## Prerequisites
+
+Before making any API calls, the user must provide two things:
+
+1. **Organization URL**: Each organization has its own subdomain, e.g. `https://acme-company.revision.app/`. This is the base URL for all API requests. **Always ask the user for their organization URL** — there is no default.
+2. **API key**: A Bearer token from the workspace settings.
 
 ## Authentication
 
@@ -17,8 +24,15 @@ Authorization: Bearer <api-key>
 
 ## Base URL
 
-- Production: `https://app.revision.so`
-- Local dev: `http://localhost:3002`
+The base URL is the organization's own Revision URL. Every organization has a unique subdomain:
+
+```
+https://{organization}.revision.app
+```
+
+For example: `https://acme-company.revision.app`
+
+**Important**: Do not use a generic URL. Always use the organization-specific subdomain provided by the user.
 
 ## Resources
 
@@ -38,7 +52,7 @@ Authorization: Bearer <api-key>
 
 ```bash
 curl -H "Authorization: Bearer $API_KEY" \
-  https://app.revision.so/api/external/components
+  https://acme-company.revision.app/api/external/components
 ```
 
 ### Create a component
@@ -47,7 +61,7 @@ curl -H "Authorization: Bearer $API_KEY" \
 curl -X POST -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '[{"name": "User Service", "state": "ACTIVE"}]' \
-  https://app.revision.so/api/external/components
+  https://acme-company.revision.app/api/external/components
 ```
 
 ### Update a component
@@ -56,7 +70,7 @@ curl -X POST -H "Authorization: Bearer $API_KEY" \
 curl -X POST -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"name": "User Service", "state": "ACTIVE", "desc": "Handles user auth"}' \
-  https://app.revision.so/api/external/components/component-id
+  https://acme-company.revision.app/api/external/components/component-id
 ```
 
 ## Standard CRUD Pattern
@@ -237,7 +251,7 @@ Bulk sync components and diagrams in a single transaction:
 curl -X POST -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"components": [...], "diagrams": [...]}' \
-  https://app.revision.so/api/external/template
+  https://acme-company.revision.app/api/external/template
 ```
 
 Accepts both JSON and YAML. Components and diagrams follow their standard schemas.
