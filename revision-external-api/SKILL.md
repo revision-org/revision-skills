@@ -295,28 +295,25 @@ GET /api/external/search/dependencies?componentId=...
 
 Returns upstream and downstream direct dependencies for a component.
 
-## Duplicate Prevention
-
-Before creating a component or diagram, search for existing ones with a similar name:
-
-- **Components**: `GET /api/external/search/components?name=<name>`
-- **Diagrams**: `GET /api/external/search/diagrams?name=<name>`
-
-If matches are found, ask the user whether to **update an existing** resource or **create a new** one.
-
-Skip the search if the user's intent is already clear from the prompt (e.g., "create a new..." or "update the existing...").
-
 ## Workflow: Create a Diagram with Components
 
-A typical end-to-end flow: create components, then create a diagram that references them.
+A typical end-to-end flow: search for duplicates, create components, then create a diagram that references them.
 
-1. **List types** to find the right `typeId` values:
+1. **Search for existing duplicates** — MUST do this before creating anything:
+   - For each component you plan to create, search by name: `GET /api/external/search/components?name=<name>`
+   - For the diagram, search by name: `GET /api/external/search/diagrams?name=<name>`
+   - If matches are found → ask the user whether to **reuse the existing** resource or **create a new** one
+   - If the user chooses to reuse → use the existing resource's `id` instead of creating a new one
+   - If no matches → proceed to create
+   - Skip ONLY when the user explicitly says "create a new..." or "update the existing..."
+
+2. **List types** to find the right `typeId` values:
 ```bash
 curl -H "Authorization: Bearer $API_KEY" \
   https://acme-company.revision.app/api/external/types
 ```
 
-2. **Create components**:
+3. **Create components** (skip any that the user chose to reuse from step 1):
 ```bash
 curl -X POST -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
@@ -330,7 +327,7 @@ curl -X POST -H "Authorization: Bearer $API_KEY" \
   https://acme-company.revision.app/api/external/components
 ```
 
-3. **Create a diagram** with component instances and a relation:
+4. **Create a diagram** with component instances and a relation:
 ```bash
 curl -X POST -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
@@ -349,7 +346,7 @@ curl -X POST -H "Authorization: Bearer $API_KEY" \
   https://acme-company.revision.app/api/external/diagrams
 ```
 
-4. **Verify** by fetching the diagram back:
+5. **Verify** by fetching the diagram back:
 ```bash
 curl -H "Authorization: Bearer $API_KEY" \
   https://acme-company.revision.app/api/external/diagrams/<returned-id>
