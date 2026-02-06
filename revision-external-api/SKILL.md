@@ -38,13 +38,12 @@ For example: `https://acme-company.revision.app`
 
 | Resource | Endpoints | Description |
 |----------|-----------|-------------|
-| Components | CRUD + batch upsert | Architecture components (services, databases, etc.) |
-| Diagrams | CRUD + batch upsert | Architecture diagrams with component instances, relations, textareas |
+| Components | CRUD + batch upsert + filter | Architecture components (services, databases, etc.) |
+| Diagrams | CRUD + batch upsert + filter | Architecture diagrams with component instances, relations, textareas |
 | Attributes | CRUD + batch upsert | Custom attribute definitions on components |
 | Tags | CRUD + batch upsert | Tags for categorizing diagrams |
 | Types | Read-only | Component type definitions |
 | Template | POST | Bulk sync of components + diagrams in a single transaction |
-| Search | GET | Search components, diagrams, and dependencies |
 
 ## Quick Start
 
@@ -88,7 +87,7 @@ Every resource (components, diagrams, attributes, tags) follows the same pattern
 
 | Method | Path | Action |
 |--------|------|--------|
-| GET | `/api/external/{resource}` | List all |
+| GET | `/api/external/{resource}` | List all (with optional query filters on components, diagrams, types) |
 | POST | `/api/external/{resource}` | Create (single item) |
 | GET | `/api/external/{resource}/{id}` | Get by ID |
 | PATCH | `/api/external/{resource}/{id}` | Update by ID |
@@ -254,7 +253,7 @@ Custom fields on components:
 }
 ```
 
-Types are managed in the Revision UI. The API can only list them via `GET /api/external/types`.
+Types are managed in the Revision UI. List via `GET /api/external/types`. Supports optional `name` query parameter for filtering.
 
 ## Template Sync
 
@@ -269,39 +268,45 @@ curl -X POST -H "Authorization: Bearer $API_KEY" \
 
 Accepts both JSON and YAML. Components and diagrams follow their standard schemas.
 
-## Search
+## Filtering & Dependencies
 
-### Search Diagrams
-
-```
-GET /api/external/search/diagrams?componentId=...&tagId=...&name=...&level=...&state=...
-```
-
-At least one filter required.
-
-### Search Components
+### Filtering Components
 
 ```
-GET /api/external/search/components?name=...&typeId=...&tagId=...&attributeId=...&attributeValue=...&state=...
+GET /api/external/components?name=...&typeId=...&tagId=...&attributeId=...&attributeValue=...&state=...
 ```
 
-At least one filter required. `attributeValue` requires `attributeId`.
+All filters optional. `attributeValue` requires `attributeId`.
 
-### Search Dependencies
+### Filtering Diagrams
 
 ```
-GET /api/external/search/dependencies?componentId=...
+GET /api/external/diagrams?componentId=...&tagId=...&name=...&level=...&state=...
 ```
 
-Returns upstream and downstream direct dependencies for a component.
+All filters optional.
+
+### Filtering Types
+
+```
+GET /api/external/types?name=...
+```
+
+### Component Dependencies
+
+```
+GET /api/external/components/{id}/dependencies
+```
+
+Returns `DependencySearchResult[]` — upstream and downstream direct dependencies for a component.
 
 ## Workflow: Create a Diagram with Components
 
 A typical end-to-end flow: search for duplicates, create components, then create a diagram that references them.
 
 1. **Search for existing duplicates** — MUST do this before creating anything:
-   - For each component you plan to create, search by name: `GET /api/external/search/components?name=<name>`
-   - For the diagram, search by name: `GET /api/external/search/diagrams?name=<name>`
+   - For each component you plan to create, search by name: `GET /api/external/components?name=<name>`
+   - For the diagram, search by name: `GET /api/external/diagrams?name=<name>`
    - If matches are found → ask the user whether to **reuse the existing** resource or **create a new** one
    - If the user chooses to reuse → use the existing resource's `id` instead of creating a new one
    - If no matches → proceed to create

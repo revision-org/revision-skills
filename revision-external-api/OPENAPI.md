@@ -10,14 +10,25 @@ Full endpoint reference. See [SKILL.md](SKILL.md) for overview and quick start.
 - [Tags](#tags) — CRUD + batch upsert
 - [Types](#types) — Read-only
 - [Template](#template) — Bulk sync
-- [Search](#search) — Diagrams, components, dependencies
-- [Schemas](#schemas) — Component, Diagram, ComponentInstance, Relation, Textarea, Attribute, Tag, Type, ErrorResponse
+- [Filtering](#filtering) — Query parameters for components, diagrams, types
+- [Dependencies](#dependencies) — Component dependency lookup
+- [Schemas](#schemas) — Component, Diagram, ComponentInstance, Relation, Textarea, Attribute, Tag, Type, DependencySearchResult, ErrorResponse
 
 ## Components
 
 ### GET /api/external/components
 
-List all components in the workspace.
+List all components in the workspace. Supports optional query parameters for filtering.
+
+**Query parameters** (all optional):
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `name` | string | Filter by name (case-insensitive substring match) |
+| `typeId` | string | Filter by type identifier |
+| `tagId` | string | Filter by tag identifier |
+| `attributeId` | string | Filter by attribute identifier |
+| `attributeValue` | string | Filter by attribute value (requires `attributeId`) |
+| `state` | enum | `DRAFT`, `ACTIVE`, `ARCHIVED` |
 
 **Response 200**: `Component[]`
 
@@ -69,7 +80,16 @@ Create or update multiple components. Items with `id` are updated; items without
 
 ### GET /api/external/diagrams
 
-List all diagrams in the workspace.
+List all diagrams in the workspace. Supports optional query parameters for filtering.
+
+**Query parameters** (all optional):
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `componentId` | string | Filter by component identifier |
+| `tagId` | string | Filter by tag identifier |
+| `name` | string | Filter by name (case-insensitive substring match) |
+| `level` | enum | `C0`, `C1`, `C2`, `C3`, `C4`, `D1`, `P0` |
+| `state` | enum | `DRAFT`, `ACTIVE`, `ARCHIVED` |
 
 **Response 200**: `Diagram[]`
 
@@ -90,7 +110,9 @@ Get a single diagram by ID (slug or ref).
 **Parameters**:
 - `id` (path, required): The diagram ID (slug or ref)
 
-**Response 200**: `Diagram`
+**Content negotiation**: Send `Accept: image/svg+xml` header to get an SVG rendering of the diagram instead of JSON.
+
+**Response 200**: `Diagram` (JSON) or SVG string (`image/svg+xml`)
 
 ### PATCH /api/external/diagrams/{id}
 
@@ -229,7 +251,12 @@ Create or update multiple tags.
 
 ### GET /api/external/types
 
-List all component types. Read-only.
+List all component types. Read-only. Supports optional query parameters for filtering.
+
+**Query parameters** (all optional):
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `name` | string | Filter by name (case-insensitive substring match) |
 
 **Response 200**: `Type[]`
 
@@ -255,47 +282,22 @@ Both arrays default to `[]` if omitted.
 
 ---
 
-## Search
+## Filtering
 
-### GET /api/external/search/diagrams
+Filtering is done via optional query parameters on the standard list endpoints — there are no separate search paths. See the query parameter tables under [Components](#get-apiexternalcomponents), [Diagrams](#get-apiexternaldiagrams), and [Types](#get-apiexternaltypes) above.
 
-Search diagrams by filters. At least one query parameter required.
+All filters are optional. The list endpoints always return the full resource schema (`Component[]`, `Diagram[]`, `Type[]`).
 
-**Query parameters**:
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `componentId` | string | Filter by component ID |
-| `tagId` | string | Filter by tag ID |
-| `name` | string | Filter by name (partial match) |
-| `level` | enum | `C0`, `C1`, `C2`, `C3`, `C4`, `D1`, `P0` |
-| `state` | enum | `DRAFT`, `ACTIVE`, `ARCHIVED` |
+---
 
-**Response 200**: `DiagramSearchResult[]` — `{ id, name, url, state, level, tags }`
+## Dependencies
 
-### GET /api/external/search/components
-
-Search components by filters. At least one query parameter required.
-
-**Query parameters**:
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `name` | string | Filter by name (partial match) |
-| `typeId` | string | Filter by type ID |
-| `tagId` | string | Filter by tag ID |
-| `attributeId` | string | Filter by attribute ID |
-| `attributeValue` | string | Filter by attribute value (requires `attributeId`) |
-| `state` | enum | `DRAFT`, `ACTIVE`, `ARCHIVED` |
-
-**Response 200**: `ComponentSearchResult[]` — `{ id, name, state, desc, type: { id, name } | null, tags, attributes: [{ id, value: string | null }] }`
-
-### GET /api/external/search/dependencies
+### GET /api/external/components/{id}/dependencies
 
 Find direct upstream and downstream dependencies for a component.
 
-**Query parameters**:
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `componentId` | string | The component ID to find dependencies for |
+**Parameters**:
+- `id` (path, required): The component identifier
 
 **Response 200**: `DependencySearchResult[]` — `{ component: { id, name }, direction: "upstream" | "downstream", diagrams: [{ id, name }] }`
 
@@ -410,6 +412,14 @@ Find direct upstream and downstream dependencies for a component.
 |-------|------|----------|-------------|
 | `id` | string | read-only | Type ID |
 | `name` | string | read-only | Type name |
+
+### DependencySearchResult
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `component` | `{ id, name }` | yes | The dependent component |
+| `direction` | enum | yes | `upstream` or `downstream` |
+| `diagrams` | `[{ id, name }]` | yes | Diagrams where the dependency exists |
 
 ### ErrorResponse
 
