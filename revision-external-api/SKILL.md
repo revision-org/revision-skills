@@ -108,7 +108,6 @@ Every resource (components, diagrams, attributes, tags) follows the same pattern
   "id": "string",
   "name": "string",
   "state": "DRAFT | ACTIVE | ARCHIVED",
-  "ref": "string | null",
   "desc": "string | null",
   "inlineDesc": false,
   "typeId": "string | null",
@@ -119,8 +118,7 @@ Every resource (components, diagrams, attributes, tags) follows the same pattern
 ```
 
 - `id`: Optional on create — provide it for a predictable ID, omit for auto-generated
-- `ref`: External reference identifier
-- `apiContext`: Opaque string for API-managed metadata
+- `apiContext`: Optional label to group related imports (defaults to current UTC timestamp if omitted)
 - `linksTo`: Array of diagram IDs this component links to
 - `attributes`: Component attribute values (reference attribute definitions by `id`)
 

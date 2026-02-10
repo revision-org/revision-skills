@@ -44,10 +44,10 @@ Create a single component. Optionally include `id` for a predictable ID; omit fo
 
 ### GET /api/external/components/{id}
 
-Get a single component by ID (slug or ref).
+Get a single component by ID.
 
 **Parameters**:
-- `id` (path, required): The component ID (slug or ref)
+- `id` (path, required): The component identifier
 
 **Response 200**: `Component`
 
@@ -56,7 +56,7 @@ Get a single component by ID (slug or ref).
 Update a component by ID.
 
 **Parameters**:
-- `id` (path, required): The component ID (slug or ref)
+- `id` (path, required): The component identifier
 
 **Request body**: `Component` (partial, fields to update)
 
@@ -105,10 +105,10 @@ Create a single diagram. Optionally include `id` for a predictable ID; omit for 
 
 ### GET /api/external/diagrams/{id}
 
-Get a single diagram by ID (slug or ref).
+Get a single diagram by ID.
 
 **Parameters**:
-- `id` (path, required): The diagram ID (slug or ref)
+- `id` (path, required): The diagram identifier
 
 **Content negotiation**: Send `Accept: image/svg+xml` header to get an SVG rendering of the diagram instead of JSON.
 
@@ -119,7 +119,7 @@ Get a single diagram by ID (slug or ref).
 Update a diagram by ID.
 
 **Parameters**:
-- `id` (path, required): The diagram ID (slug or ref)
+- `id` (path, required): The diagram identifier
 
 **Request body**: `Diagram` (partial)
 
@@ -166,7 +166,7 @@ Create a single attribute. Optionally include `id` for a predictable ID; omit fo
 Get a single attribute by ID.
 
 **Parameters**:
-- `id` (path, required): The attribute ID (slug or ref)
+- `id` (path, required): The attribute identifier
 
 **Response 200**: `Attribute`
 
@@ -175,7 +175,7 @@ Get a single attribute by ID.
 Update an attribute by ID.
 
 **Parameters**:
-- `id` (path, required): The attribute ID (slug or ref)
+- `id` (path, required): The attribute identifier
 
 **Request body**: `Attribute` (partial)
 
@@ -218,7 +218,7 @@ Create a single tag. Optionally include `id` for a predictable ID; omit for auto
 Get a single tag by ID.
 
 **Parameters**:
-- `id` (path, required): The tag ID (slug or ref)
+- `id` (path, required): The tag identifier
 
 **Response 200**: `Tag`
 
@@ -227,7 +227,7 @@ Get a single tag by ID.
 Update a tag by ID.
 
 **Parameters**:
-- `id` (path, required): The tag ID (slug or ref)
+- `id` (path, required): The tag identifier
 
 **Request body**: `Tag` (partial)
 
@@ -312,11 +312,10 @@ Find direct upstream and downstream dependencies for a component.
 | `id` | string | no | Provide for predictable ID, omit for auto-generated |
 | `name` | string | create | Component name |
 | `state` | enum | no | `DRAFT` (default), `ACTIVE`, `ARCHIVED` |
-| `ref` | string\|null | no | External reference |
 | `desc` | string\|null | no | Description (HTML) |
 | `inlineDesc` | boolean | no | Show description inline (default: false) |
 | `typeId` | string\|null | no | Component type ID |
-| `apiContext` | string | no | Opaque API metadata |
+| `apiContext` | string | no | Optional label to group related imports (defaults to UTC timestamp) |
 | `attributes` | array | no | `[{ id, value }]` |
 | `linksTo` | string[] | no | Diagram IDs this component links to |
 
@@ -331,7 +330,7 @@ Find direct upstream and downstream dependencies for a component.
 | `desc` | string\|null | no | Description |
 | `level` | enum\|null | no | `C0`, `C1`, `C2`, `C3`, `C4`, `D1`, `P0` |
 | `tags` | string[] | no | Tag IDs |
-| `apiContext` | string | no | Opaque API metadata |
+| `apiContext` | string | no | Optional label to group related imports (defaults to UTC timestamp) |
 | `componentInstances` | array | no | Component instances on diagram |
 | `relations` | array | no | Relations between instances |
 | `textareas` | array | no | Text areas on diagram |
@@ -394,7 +393,7 @@ Find direct upstream and downstream dependencies for a component.
 | `list` | string[] | LIST only | Options for LIST type |
 | `forTypes` | string[] | no | Restrict to component type IDs |
 | `required` | boolean | no | Whether attribute is required |
-| `apiContext` | string | no | Opaque API metadata |
+| `apiContext` | string | no | Optional label to group related imports (defaults to UTC timestamp) |
 
 ### Tag
 
@@ -404,7 +403,7 @@ Find direct upstream and downstream dependencies for a component.
 | `name` | string | create | Tag name (min 1 char) |
 | `color` | enum | create | `gray`, `red`, `orange`, `yellow`, `green`, `blue`, `purple` |
 | `desc` | string\|null | no | Description |
-| `apiContext` | string | no | Opaque API metadata |
+| `apiContext` | string | no | Optional label to group related imports (defaults to UTC timestamp) |
 
 ### Type
 
