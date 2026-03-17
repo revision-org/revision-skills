@@ -1,6 +1,6 @@
 ---
 name: revision-external-api
-description: Manages architecture components, diagrams, attributes, tags, and templates via the Revision External API. Triggers when Revision API, architecture components, C4 diagrams, or syncing architecture data with Revision are mentioned.
+description: Manages architecture components, diagrams, attributes, tags, and templates via the Revision External API. Use this whenever the user wants to document architecture in Revision, sync a workspace model, import or update components/diagrams from JSON or YAML, work with C4 diagrams, or use the Revision API directly.
 ---
 
 # Revision External API
@@ -11,7 +11,7 @@ REST API for managing architecture documentation in Revision workspaces.
 
 Before making any API calls, the user must provide two things:
 
-1. **Organization URL**: Each organization has its own subdomain, e.g. `https://acme-company.revision.app/`. This is the base URL for all API requests. **Always ask the user for their organization URL** — there is no default.
+1. **Organization URL**: Each organization has its own subdomain, e.g. `https://acme-company.revision.app/`. This is the base URL for all API requests. **Ask the user for their organization URL if it is not already available in the conversation context** — there is no default.
 2. **API key**: A Bearer token from the workspace settings.
 
 ## Authentication
@@ -300,62 +300,89 @@ Returns `DependencySearchResult[]` — upstream and downstream direct dependenci
 
 ## Workflow: Create a Diagram with Components
 
-A typical end-to-end flow: search for duplicates, create components, then create a diagram that references them.
+A typical end-to-end flow for documenting architecture in Revision: understand what should be documented, avoid duplicates, resolve types, create a reusable YAML template, then use that template to create the diagram.
 
-1. **Search for existing duplicates** — MUST do this before creating anything:
-   - For each component you plan to create, search by name: `GET /api/external/components?name=<name>`
+This is the default workflow for architecture documentation and diagram creation tasks. Do not force this workflow onto read-only lookups, dependency queries, or narrow updates to already-known resources.
+
+1. **Understand what should be documented**:
+   - Identify the architecture elements that belong in the model and the relationships that should appear on the diagram
+   - Distinguish between real modeled components and diagram-only placeholders before creating anything
+
+2. **Search for existing duplicates** — do this before creating components or diagrams unless the user explicitly says to create a brand new resource:
+   - For each component you may need, search by name: `GET /api/external/components?name=<name>`
    - For the diagram, search by name: `GET /api/external/diagrams?name=<name>`
-   - If matches are found → ask the user whether to **reuse the existing** resource or **create a new** one
-   - If the user chooses to reuse → use the existing resource's `id` instead of creating a new one
-   - If no matches → proceed to create
-   - Skip ONLY when the user explicitly says "create a new..." or "update the existing..."
+   - If matches are found, ask the user whether to reuse the existing resource or create a new one
+   - If the user chooses to reuse, use the existing resource's `id` instead of creating a new one
 
-2. **List types** to find the right `typeId` values:
+3. **For components that are not found, always ask before creating them**:
+   - Ask whether each missing item should be created as a real component or represented as a placeholder on the diagram
+   - Recommend creating components for real architecture elements the user wants tracked in the model
+   - Recommend placeholders for uncertain, temporary, external, or diagram-only elements
+
+4. **List types** to find the right `typeId` values for every component or placeholder that needs one:
 ```bash
 curl -H "Authorization: Bearer $API_KEY" \
   https://acme-company.revision.app/api/external/types
 ```
 
-3. **Create components** (skip any that the user chose to reuse from step 1):
-```bash
-curl -X POST -H "Authorization: Bearer $API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"id": "user-service", "name": "User Service", "state": "ACTIVE"}' \
-  https://acme-company.revision.app/api/external/components
-```
-```bash
-curl -X POST -H "Authorization: Bearer $API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"id": "user-db", "name": "User Database", "state": "ACTIVE"}' \
-  https://acme-company.revision.app/api/external/components
+   - Always search for matching types before building the template
+   - Choose the closest matching `typeId` from the workspace's available types
+   - If no good match exists, tell the user and use a reasonable fallback only if they agree
+
+5. **Create a YAML template locally first**:
+   - Write a YAML template containing the components to create or reuse and the diagram definition
+   - Prefer predictable IDs for components that will be referenced from the diagram
+   - Keep the YAML artifact in a form the user can save, reuse, and edit locally
+   - Prefer the template endpoint over a series of individual create calls when creating a new diagram with related components
+
+Example YAML template:
+
+```yaml
+components:
+  - id: user-service
+    name: User Service
+    state: ACTIVE
+    typeId: backend-service
+
+  - id: user-db
+    name: User Database
+    state: ACTIVE
+    typeId: database
+
+diagrams:
+  - name: User Service Context
+    level: C2
+    state: ACTIVE
+    componentInstances:
+      - ref: us
+        componentId: user-service
+      - ref: udb
+        componentId: user-db
+    relations:
+      - fromRef: us
+        toRef: udb
+        label: Reads/writes
 ```
 
-4. **Create a diagram** with component instances and a relation:
+6. **Use the template to create or sync the diagram**:
 ```bash
 curl -X POST -H "Authorization: Bearer $API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "User Service Context",
-    "level": "C2",
-    "state": "ACTIVE",
-    "componentInstances": [
-      { "ref": "us", "componentId": "user-service" },
-      { "ref": "udb", "componentId": "user-db" }
-    ],
-    "relations": [
-      { "fromRef": "us", "toRef": "udb", "label": "Reads/writes" }
-    ]
-  }' \
-  https://acme-company.revision.app/api/external/diagrams
+  -H "Content-Type: application/yaml" \
+  --data-binary @template.yaml \
+  https://acme-company.revision.app/api/external/template
 ```
 
-5. **Verify** by fetching the diagram back:
+7. **Use Revision auto-layout by default**:
+   - Do not set fixed `position`, `x`, `y`, `width`, or `height` values unless the user explicitly asks for manual placement or sizing
+   - Let Revision auto-layout and auto-size component instances whenever possible
+
+8. **Verify** by fetching the diagram back:
 ```bash
 curl -H "Authorization: Bearer $API_KEY" \
   https://acme-company.revision.app/api/external/diagrams/<returned-id>
 ```
 
-For bulk operations, use the **template endpoint** to sync everything in a single transaction instead.
+For bulk operations and new documentation flows, prefer the **template endpoint** to sync everything in a single transaction.
 
 ## Output Summary
 
